@@ -1,17 +1,27 @@
 function main() {
-    $.writeln("Starting script...");
+    $.writeln("Script started");
+    
     var inputFolder = new Folder("C:/abc/abc_mockup/1L/Mockup");
     var outputFolder = new Folder("C:/abc/abc_mockup/1L/output");
     var inputImageFolder = new Folder("C:/abc/abc_mockup/1L/Png");
     var bgFolder = new Folder("C:/abc/abc_mockup/1L/bg");
 
-    $.writeln("Suppressing dialog boxes...");
+    // Подавление всех диалоговых окон, кроме ошибок
     app.displayDialogs = DialogModes.NO;
 
-    if (!outputFolder.exists) outputFolder.create();
+    $.writeln("Input Folder: " + inputFolder.fsName);
+    $.writeln("Output Folder: " + outputFolder.fsName);
+    $.writeln("Input Image Folder: " + inputImageFolder.fsName);
+    $.writeln("BG Folder: " + bgFolder.fsName);
+
+    if (!outputFolder.exists) {
+        outputFolder.create();
+        $.writeln("Output folder created: " + outputFolder.fsName);
+    }
+
     if (!inputImageFolder.exists) {
-        $.writeln("Image folder not found.");
         alert("Папка с изображениями не найдена.");
+        $.writeln("Input image folder not found");
         return;
     }
 
@@ -19,8 +29,8 @@ function main() {
 
     var psdFiles = inputFolder.getFiles("*.psd");
     if (psdFiles.length === 0) {
-        $.writeln("Mockup PSD file not found.");
         alert("Файл мокапа .psd не найден в папке.");
+        $.writeln("Mockup PSD file not found in folder");
         return;
     }
 
@@ -28,26 +38,25 @@ function main() {
     var mockupFileLastWriteTime = new Date(mockupFile.modified);
 
     if (mockupFileLastWriteTime.toDateString() !== allowedMockupFileLastWriteTime.toDateString()) {
-        $.writeln("Mockup file is incorrect.");
         alert("Файл мокапа не корректен");
+        $.writeln("Mockup file is not correct");
         return;
     }
 
+    $.writeln("Opening PSD file: " + mockupFile.fsName);
     var docMockup = app.open(psdFiles[0]);
     var smartObjectLayer = findLayerByName(docMockup.layers, "A");
     if (!smartObjectLayer || smartObjectLayer.kind !== LayerKind.SMARTOBJECT) {
-        $.writeln("Layer 'A' not found or not a smart object.");
         alert("Слой 'A' не найден или не является смарт-объектом.");
+        $.writeln("Layer 'A' not found or not a smart object");
         docMockup.close(SaveOptions.DONOTSAVECHANGES);
         return;
     }
 
-    $.writeln("Inserting background...");
     insertBackground(docMockup, bgFolder);
 
     var pngFiles = inputImageFolder.getFiles("*.png");
     for (var i = 0; i < pngFiles.length; i++) {
-        $.writeln("Processing PNG file: " + pngFiles[i].name);
         app.activeDocument = docMockup;
         docMockup.activeLayer = smartObjectLayer;
         executeAction(stringIDToTypeID("placedLayerEditContents"));
@@ -82,12 +91,14 @@ function main() {
         var jpegSaveOptions = new JPEGSaveOptions();
         jpegSaveOptions.quality = 12;
         docMockup.saveAs(jpegFile, jpegSaveOptions, true, Extension.LOWERCASE);
+
+        $.writeln("Mockup created: " + jpegFile.fsName);
     }
 
     docMockup.close(SaveOptions.DONOTSAVECHANGES);
     app.displayDialogs = DialogModes.ALL;
-    $.writeln("Script completed successfully.");
     alert("Все мокапы успешно созданы и сохранены.");
+    $.writeln("Script finished");
 }
 
 function findLayerByName(layers, name) {
@@ -95,6 +106,7 @@ function findLayerByName(layers, name) {
     for (var i = 0; i < layers.length; i++) {
         var layer = layers[i];
         if (layer.name === name && layer.kind === LayerKind.SMARTOBJECT) {
+            $.writeln("Layer found: " + name);
             return layer;
         } else if (layer.typename === 'LayerSet') {
             var foundLayer = findLayerByName(layer.layers, name);
@@ -103,11 +115,12 @@ function findLayerByName(layers, name) {
             }
         }
     }
+    $.writeln("Layer not found: " + name);
     return null;
 }
 
 function insertBackground(docMockup, bgFolder) {
-    $.writeln("Inserting background...");
+    $.writeln("Inserting background from folder: " + bgFolder.fsName);
     var bgFiles = bgFolder.getFiles(function(f) { return f instanceof File && f.name.match(/\.(jpeg|jpg|png|gif)$/i); });
     if (bgFiles.length > 0) {
         var bgFile = bgFiles[0];
@@ -134,6 +147,7 @@ function insertBackground(docMockup, bgFolder) {
             var newLayerWidth = newBounds[2].as('px') - newBounds[0].as('px');
             var newLayerHeight = newBounds[3].as('px') - newBounds[1].as('px');
             pastedLayer.translate((docWidth - newLayerWidth) / 2 - newBounds[0].as('px'), (docHeight - newLayerHeight) / 2 - newBounds[1].as('px'));
+            $.writeln("Background inserted");
         }
     }
 }
