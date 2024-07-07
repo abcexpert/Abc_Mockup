@@ -6,15 +6,29 @@ function main() {
     var inputImageFolder = new Folder("C:/abc/abc_mockup/1L/Png");
     var bgFolder = new Folder("C:/abc/abc_mockup/1L/bg");
 
+    console.log("Проверка путей к папкам");
+    console.log("Input Folder: " + inputFolder.fsName);
+    console.log("Output Folder: " + outputFolder.fsName);
+    console.log("Input Image Folder: " + inputImageFolder.fsName);
+    console.log("BG Folder: " + bgFolder.fsName);
+
     app.displayDialogs = DialogModes.NO;
 
     console.log("Проверка существования выходной папки");
-    if (!outputFolder.exists) outputFolder.create();
+    if (!outputFolder.exists) {
+        console.log("Выходная папка не существует, создаем...");
+        outputFolder.create();
+    } else {
+        console.log("Выходная папка существует");
+    }
+
     console.log("Проверка существования папки с изображениями");
     if (!inputImageFolder.exists) {
         console.log("Папка с изображениями не найдена.");
         alert("Папка с изображениями не найдена.");
         return;
+    } else {
+        console.log("Папка с изображениями найдена");
     }
 
     var allowedMockupFileLastWriteTime = new Date("6/29/2024");
@@ -25,12 +39,15 @@ function main() {
         console.log("Файл мокапа .psd не найден в папке.");
         alert("Файл мокапа .psd не найден в папке.");
         return;
+    } else {
+        console.log("Найдено " + psdFiles.length + " .psd файла(ов)");
     }
 
     var mockupFile = psdFiles[0];
     var mockupFileLastWriteTime = new Date(mockupFile.modified);
 
     console.log("Проверка времени последнего изменения файла мокапа");
+    console.log("Дата последнего изменения файла: " + mockupFileLastWriteTime);
     if (mockupFileLastWriteTime.toDateString() !== allowedMockupFileLastWriteTime.toDateString()) {
         console.log("Файл мокапа не корректен");
         alert("Файл мокапа не корректен");
@@ -45,12 +62,15 @@ function main() {
         alert("Слой 'A' не найден или не является смарт-объектом.");
         docMockup.close(SaveOptions.DONOTSAVECHANGES);
         return;
+    } else {
+        console.log("Слой 'A' найден и является смарт-объектом");
     }
 
     console.log("Вставка фона, если файл существует");
     insertBackground(docMockup, bgFolder);
 
     var pngFiles = inputImageFolder.getFiles("*.png");
+    console.log("Найдено PNG файлов: " + pngFiles.length);
     for (var i = 0; i < pngFiles.length; i++) {
         console.log("Обработка файла PNG: " + pngFiles[i].name);
         app.activeDocument = docMockup;
@@ -113,11 +133,14 @@ function findLayerByName(layers, name) {
 }
 
 function insertBackground(docMockup, bgFolder) {
+    console.log("Вставка фона");
     var bgFiles = bgFolder.getFiles(function(f) { return f instanceof File && f.name.match(/\.(jpeg|jpg|png|gif)$/i); });
     if (bgFiles.length > 0) {
+        console.log("Найдено файлов фона: " + bgFiles.length);
         var bgFile = bgFiles[0];
         var layerBG = findLayerByName(docMockup.layers, 'bg');
         if (layerBG) {
+            console.log("Слой 'bg' найден");
             app.activeDocument = docMockup;
             docMockup.activeLayer = layerBG;
             var bgDoc = app.open(bgFile);
@@ -139,7 +162,11 @@ function insertBackground(docMockup, bgFolder) {
             var newLayerWidth = newBounds[2].as('px') - newBounds[0].as('px');
             var newLayerHeight = newBounds[3].as('px') - newBounds[1].as('px');
             pastedLayer.translate((docWidth - newLayerWidth) / 2 - newBounds[0].as('px'), (docHeight - newLayerHeight) / 2 - newBounds[1].as('px'));
+        } else {
+            console.log("Слой 'bg' не найден");
         }
+    } else {
+        console.log("Файлы фона не найдены");
     }
 }
 
